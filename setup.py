@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pyAnaf",
-    version="0.0.1",
+    version="0.0.2",
     author="Radu Boncea",
     author_email="radu.boncea@gmail.com",
     description="A wrapper API of ANAF web services",
@@ -15,7 +15,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     entry_points={
         "console_scripts": [
-            "pyanaf = console:main",
+            "pyanaf = pyAnaf.console:main",
         ]
     },
     classifiers=[
