@@ -1,7 +1,9 @@
-# encoding: utf-8
 from __future__ import unicode_literals, print_function
 
 import datetime
+import sys
+
+PY_3_OR_HIGHER = sys.version_info >= (3, 0)
 
 try:
     import urllib.request as urllib_request
@@ -25,11 +27,29 @@ try:
 except ImportError:
     import simplejson as json
 
+from .models import AnafResultEntry
+
 
 class AnafError(Exception):
     """
     Base Exception thrown by the Anaf object when there is a
     general error interacting with the API.
+    """
+    pass
+
+
+class AnafHTTPError(Exception):
+    """
+    Exception thrown by the Anaf object when there is an
+    HTTP error interacting with anaf.ro.
+    """
+    pass
+
+
+class AnafResponseError(Exception):
+    """
+    Exception thrown by the Anaf object when there is an
+    error the response returned from ANAF.
     """
     pass
 
@@ -43,14 +63,25 @@ class Anaf(object):
 
     def __init__(self):
         self.cuis = {}
+        self.result = None
+        self.entries = {}
 
-    def __validate_cui(self, cui):
+    @staticmethod
+    def _validate_cui(cui):
         if not isinstance(cui, int):
             raise AnafError('CUI should be integer')
 
-    def __validate_date(self, date):
+    @staticmethod
+    def _validate_date(date):
         if not isinstance(date, datetime.date):
             raise AnafError('Date should be of type datetime.date')
+
+    @staticmethod
+    def _prepare_data(data):
+        if PY_3_OR_HIGHER:
+            return bytes(data, 'utf-8')
+        else:
+            return data
 
     def addEndpoint(self, url, target='sync'):
         if target not in ['sync', 'async']:
@@ -65,56 +96,29 @@ class Anaf(object):
             raise AnafError('Limit should be an integer')
 
     def setCUIList(self, cui_list=[], date=None):
-        """Sets the CUI list
-
-        :param cui_list: A list of unique fiscal code numbers
-        :param date: A single date
-
-        :type cui_list: list
-        :type date: datetime.date type
-
-        :return:
-        """
-
         if date is None:
             date = datetime.date.today()
 
         if len(cui_list) > self.LIMIT:
             raise AnafError('Too many CUIs to be queried. Should limit to %d' % self.LIMIT)
 
-        self.__validate_date(date)
+        self._validate_date(date)
         for cui in cui_list:
-            self.__validate_cui(cui)
+            self._validate_cui(cui)
             self.cuis[cui] = date
 
     def addCUI(self, cui, date=None):
-        """ Adds CUI entry to the list of CUIs
-
-        :param cui: A unique fiscal code number in the form of an integer  (e.g. 273663)
-        :param date: A datetime.date object
-
-        :type cui: int
-        :type date: datetime.date type
-
-        :raise AnafError: If invalid cui and date are provided, or CUI limit is exceeded
-        """
-
         if date is None:
             date = datetime.date.today()
 
-        self.__validate_cui(cui)
-        self.__validate_date(date)
+        self._validate_cui(cui)
+        self._validate_date(date)
 
         self.cuis[cui] = date
         if len(self.cuis.items()) > self.LIMIT:
             raise AnafError('Too many CUIs to be queried. Should limit to %d' % self.LIMIT)
 
-    def Query(self):
-        """
-
-        :return:
-        """
-
+    def Request(self):
         # translate cuis entries to ANAF json format
         cui_list = []
         for entry in self.cuis.items():
@@ -124,4 +128,34 @@ class Anaf(object):
                     'data': entry[1].isoformat()
                 }
             )
-        print (cui_list)
+
+        request = urllib_request.Request(self.WS_ENDPOINTS['sync'])
+        request.add_header('Content-Type', 'application/json')
+
+        try:
+            response = urllib_request.urlopen(request, self._prepare_data(json.dumps(cui_list)))
+        except urllib_error.HTTPError as e:
+            raise AnafHTTPError('Error connecting to ANAF. Got a %d HTTP code.' % e.code)
+
+        data = response.read()
+        if isinstance(data, bytes):
+            data = data.decode('utf-8')
+        try:
+            result = json.loads(data)
+        except:
+            raise AnafResponseError('Error parsing json response from ANAF.')
+
+        if result['cod'] != 200:
+            raise AnafResponseError('%s' % result['message'])
+
+        result = result['found']
+        self.result = result
+
+        for entry in result:
+            self.entries[entry['cui']] = AnafResultEntry(entry)
+
+    def getCUIData(self, cui):
+        if cui not in self.entries.keys():
+            return None
+
+        return self.entries[cui]
