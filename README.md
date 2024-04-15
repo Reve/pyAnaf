@@ -2,8 +2,8 @@
 
 
 ## Compatibility
->=Python 2.6
-Tested on python 2.6, 3.4, 3.5 and 3.6
+>=Python 3.4
+Tested on python 3.4, 3.5, 3.6, and 3.11
 
 ## Installation
 
