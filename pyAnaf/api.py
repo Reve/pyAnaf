@@ -1,8 +1,9 @@
 import datetime
 import json
-import urllib.request as urllib_request
 import urllib.error as urllib_error
-from .models import AnafResultEntry
+import urllib.request as urllib_request
+
+from models import AnafResultEntry
 
 
 class AnafError(Exception):
