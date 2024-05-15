@@ -160,3 +160,32 @@ class EinvoiceApi:
         res_obj = json.loads(response)
 
         return res_obj
+
+    def upload_invoice(self, xml_string, standard, cif, external=False, self_invoice=False):
+        """
+        Upload invoice to ANAF
+        :param standard: standard to use (UBL, CN, CII, RASP)
+        :param cif: CIF to upload invoice for
+        :param external: external invoice (optional)
+        :param self_invoice: self invoice (optional)
+        """
+
+        if self.refresh_token is None:
+            raise AnafResponseError("No refresh token provided")
+
+        url = f"{self.url}/upload"
+        headers = {
+            "Authorization": f"Bearer {self.refresh_token}",
+            "Content-Type": "text/plain",
+        }
+
+        params = {
+            "standard": standard,
+            "cif": cif,
+            "extern": external,
+            "autofactura": self_invoice,
+        }
+
+        # load xml from string
+        data = xml_string.encode("utf-8")
+        request = Request(url, headers=headers, data=data, params=params)

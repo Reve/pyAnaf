@@ -7,7 +7,7 @@ import sys
 import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from einvoice_api import EinvoiceApi
 
@@ -59,8 +59,8 @@ def interogate_cuis(cuis):
 
 class CallbackServerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        parsed_path = urlparse.urlparse(self.path)
-        query = urlparse.parse_qs(parsed_path.query)
+        parsed_path = urlparse(self.path)
+        query = parse_qs(parsed_path.query)
 
         # Extract the authorization code from the query parameters
         code = query.get("code", [None])[0]
@@ -83,15 +83,20 @@ class CallbackServerHandler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="PyAnaf CLI", description="A simple CLI interface for ANAF services")
     parser.add_argument("auth", help="Get Access Token from ANAF", default=None)
-    parser.add_argument("-c", "--cuis", help="CUIs separated by comma", default=None)
+    parser.add_argument("cuis", nargs="?", help="CUIs separated by comma", default=None)
+    parser.add_argument("--client-id", help="Client ID for ANAF API")
+    parser.add_argument("--client-secret", help="Client Secret for ANAF API")
+    parser.add_argument("--redirect-uri", help="Redirect URI for ANAF API")
 
     args = parser.parse_args()
+
+    print(args)
 
     if args.cuis:
         interogate_cuis(args.cuis)
 
     if args.auth:
-        einvoice = EinvoiceApi("test", "test", "http://localhost:8080")
+        einvoice = EinvoiceApi(args.client_id, args.client_secret, args.redirect_uri)
         url = einvoice.get_auth_url()
         print(url)
         webbrowser.open_new(einvoice.get_auth_url())
