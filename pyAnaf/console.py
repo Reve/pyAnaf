@@ -4,9 +4,9 @@ import datetime
 import os
 import pprint
 import sys
-import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from multiprocessing.pool import ThreadPool
 from urllib.parse import parse_qs, urlparse
 
 from einvoice_api import EinvoiceApi
@@ -69,15 +69,19 @@ class CallbackServerHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"You may now close this window.")
 
+        pp = CustomPrettyPrinter(indent=4)
+        pool = ThreadPool(processes=1)
+
         if code:
             # Exchange code for token in a separate thread
-            threading.Thread(target=einvoice.get_anaf_token, args=(code,)).start()
+            async_result = pool.apply_async(einvoice.get_anaf_token, (code,))
+            pp.pprint(async_result.get())
 
         # Shut down the HTTP server after handling the request
         def shutdown_server(server):
             server.shutdown()
 
-        threading.Thread(target=shutdown_server, args=(httpd,)).start()
+        pool.apply_async(shutdown_server, (httpd,))
 
 
 if __name__ == "__main__":
@@ -90,17 +94,19 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    print(args)
-
     if args.cuis:
         interogate_cuis(args.cuis)
 
     if args.auth:
         einvoice = EinvoiceApi(args.client_id, args.client_secret, args.redirect_uri)
         url = einvoice.get_auth_url()
-        print(url)
+
+        pprint.pprint("=====================")
+        pprint.pprint("Here is the URL in case the browser doesn't open automaticaly")
+        pprint.pprint(url)  # in case the browser doesn't open by it's self
+        pprint.pprint("=====================")
+
         webbrowser.open_new(einvoice.get_auth_url())
-        # webbrowser.open_new("https://google.ro")
 
         server_address = ("", 8080)
         httpd = HTTPServer(server_address, CallbackServerHandler)

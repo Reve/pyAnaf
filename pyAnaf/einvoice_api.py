@@ -38,6 +38,9 @@ class EinvoiceApi:
         return url
 
     def get_anaf_token(self, code):
+        if code is None:
+            return
+
         url = config["DEFAULT"].get("anaf_token_url")
         params = {
             "client_id": self.client_id,
@@ -57,7 +60,7 @@ class EinvoiceApi:
         if response.status != 200:
             raise AnafResponseError(f"Error getting token: {response.status}")
 
-        res_obj = json.loads(response)
+        res_obj = json.loads(response.read())
 
         return res_obj
 
