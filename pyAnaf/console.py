@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from multiprocessing.pool import ThreadPool
 from urllib.parse import parse_qs, urlparse
 
-from einvoice_api import EinvoiceApi
+from einvoice_api import AnafAuth
 
 try:
     from pyAnaf.api import Anaf
@@ -74,7 +74,7 @@ class CallbackServerHandler(BaseHTTPRequestHandler):
 
         if code:
             # Exchange code for token in a separate thread
-            async_result = pool.apply_async(einvoice.get_anaf_token, (code,))
+            async_result = pool.apply_async(anaf_auth.get_anaf_token, (code,))
             pp.pprint(async_result.get())
 
         # Shut down the HTTP server after handling the request
@@ -98,15 +98,15 @@ if __name__ == "__main__":
         interogate_cuis(args.cuis)
 
     if args.auth:
-        einvoice = EinvoiceApi(args.client_id, args.client_secret, args.redirect_uri)
-        url = einvoice.get_auth_url()
+        anaf_auth = AnafAuth(args.client_id, args.client_secret, args.redirect_uri)
+        url = anaf_auth.get_auth_url()
 
         pprint.pprint("=====================")
         pprint.pprint("Here is the URL in case the browser doesn't open automaticaly")
         pprint.pprint(url)  # in case the browser doesn't open by it's self
         pprint.pprint("=====================")
 
-        webbrowser.open_new(einvoice.get_auth_url())
+        webbrowser.open_new(anaf_auth.get_auth_url())
 
         server_address = ("", 8080)
         httpd = HTTPServer(server_address, CallbackServerHandler)

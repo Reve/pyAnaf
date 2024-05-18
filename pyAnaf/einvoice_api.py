@@ -13,16 +13,11 @@ config = ConfigParser()
 config.read(f"{dir_path}/einvoice_api.ini")
 
 
-class EinvoiceApi:
-    def __init__(self, client_id, client_secret, redirect_uri, refresh_token=None):
-        if TESTING:
-            self.url = config["testing"].get("anaf_api_url")
-
-        self.url = config["DEFAULT"].get("anaf_api_url")
+class AnafAuth:
+    def __init__(self, client_id, client_secret, redirect_uri):
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
-        self.refresh_token = refresh_token
 
     def get_auth_url(self):
         """
@@ -88,6 +83,15 @@ class EinvoiceApi:
 
         return res_obj
 
+
+class EinvoiceApi:
+    def __init__(self, access_token):
+        if TESTING:
+            self.url = config["testing"].get("anaf_api_url")
+
+        self.url = config["DEFAULT"].get("anaf_api_url")
+        self.access_token = access_token
+
     def list_messages(self, cif, days=30, filter=None):
         """
         List messages for a CIF
@@ -95,7 +99,7 @@ class EinvoiceApi:
         :param days: number of days to list messages for (optional)
         :param filter: filter messages by type (E,P,T,R) (optional)
         """
-        if self.refresh_token is None:
+        if self.access_token is None:
             raise AnafResponseError("No refresh token provided")
 
         url = f"{self.url}/listaMesajeFactura?cif={cif}&days={days}"
@@ -104,7 +108,7 @@ class EinvoiceApi:
             url += f"&filtru={filter}"
 
         headers = {
-            "Authorization": f"Bearer {self.refresh_token}",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         request = Request(url, headers=headers)
@@ -134,7 +138,7 @@ class EinvoiceApi:
         :param page: page number
         :param filter: filter messages by type (E,P,T,R) (optional)
         """
-        if self.refresh_token is None:
+        if self.access_token is None:
             raise AnafResponseError("No refresh token provided")
 
         url = f"{self.url}/listaMesajePaginatieFactura?cif={cif}&startTime={start_time}&endTime={end_time}&page={page}"
@@ -143,7 +147,7 @@ class EinvoiceApi:
             url += f"&filtru={filter}"
 
         headers = {
-            "Authorization": f"Bearer {self.refresh_token}",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         request = Request(url, headers=headers)
@@ -173,12 +177,12 @@ class EinvoiceApi:
         :param self_invoice: self invoice (optional)
         """
 
-        if self.refresh_token is None:
+        if self.access_token is None:
             raise AnafResponseError("No refresh token provided")
 
         url = f"{self.url}/upload"
         headers = {
-            "Authorization": f"Bearer {self.refresh_token}",
+            "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "text/plain",
         }
 
