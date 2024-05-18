@@ -1,15 +1,17 @@
 from xml.etree import ElementTree as ET
 
 
-class EinvoiceSeller:
-    def __init__(self, name, address, city, postal_code, country, vat_number, bank_account):
+class EinvoiceEntity:
+    def __init__(self, name, cui, country, county, city, postal_code, address, email, iban):
         self.name = name
-        self.address = address
+        self.cui = cui
+        self.country = country
+        self.county = county
         self.city = city
         self.postal_code = postal_code
-        self.country = country
-        self.vat_number = vat_number
-        self.bank_account = bank_account
+        self.address = address
+        self.email = email
+        self.iban = iban
 
 
 class EinvoiceItem:
@@ -22,16 +24,35 @@ class EinvoiceItem:
 
 
 class Einvoice:
-    def __init__(self, invoice_number, date, due_date, currency, net_total, vat_total, total, items, storno=None):
+    def __init__(
+        self,
+        invoice_number,
+        date,
+        due_date,
+        seller,
+        buyer,
+        items,
+        currency,
+        total,
+        total_vat,
+        net_total,
+        vat,
+        storno_id=None,
+        storno_date=None,
+    ):
         self.invoice_id = invoice_number
         self.date = date
         self.due_date = due_date
-        self.currency = currency
-        self.net_total = net_total
-        self.vat_total = vat_total
-        self.total = total
+        self.seller = seller
+        self.buyer = buyer
         self.items = items
-        self.storno = storno
+        self.currency = currency
+        self.total = total
+        self.vat_total = total_vat
+        self.net_total = net_total
+        self.vat = vat
+        self.storno_id = storno_id
+        self.storno_date = storno_date
 
 
 class XMLBuilder:
@@ -78,7 +99,7 @@ class XMLBuilder:
         XMLBuilder.add_element(
             invoice, "cbc:CustomizationID", "urn:cen.eu:en16931:2017#compliant#urn:efactura.mfinante.ro:CIUS-RO:1.0.1"
         )
-        XMLBuilder.add_element(invoice, "cbc:ID", einvoice.invoice_number)
+        XMLBuilder.add_element(invoice, "cbc:ID", einvoice.invoice_id)
         XMLBuilder.add_element(invoice, "cbc:IssueDate", einvoice.date)
         XMLBuilder.add_element(invoice, "cbc:DueDate", einvoice.due_date)
         XMLBuilder.add_element(invoice, "cbc:InvoiceTypeCode", "380")
@@ -102,12 +123,12 @@ class XMLBuilder:
         XMLBuilder.add_element(payee_financial_account, "cbc:ID", einvoice.seller.iban)
 
         tax_total = XMLBuilder.add_element(invoice, "cac:TaxTotal")
-        XMLBuilder.add_element(tax_total, "cbc:TaxAmount", str(einvoice.total_vat), attrib={"currencyID": "RON"})
+        XMLBuilder.add_element(tax_total, "cbc:TaxAmount", str(einvoice.vat_total), attrib={"currencyID": "RON"})
         tax_subtotal = XMLBuilder.add_element(tax_total, "cac:TaxSubtotal")
         XMLBuilder.add_element(
             tax_subtotal, "cbc:TaxableAmount", str(einvoice.net_total), attrib={"currencyID": "RON"}
         )
-        XMLBuilder.add_element(tax_subtotal, "cbc:TaxAmount", str(einvoice.total_vat), attrib={"currencyID": "RON"})
+        XMLBuilder.add_element(tax_subtotal, "cbc:TaxAmount", str(einvoice.vat_total), attrib={"currencyID": "RON"})
         tax_category = XMLBuilder.add_element(tax_subtotal, "cac:TaxCategory")
         XMLBuilder.add_element(tax_category, "cbc:ID", "S")
         XMLBuilder.add_element(tax_category, "cbc:Percent", str(einvoice.vat))
@@ -134,7 +155,7 @@ class XMLBuilder:
             XMLBuilder.add_element(
                 invoice_line, "cbc:InvoicedQuantity", str(item.quantity), attrib={"unitCode": "C61"}
             )
-            line_extension_amount = XMLBuilder.add_element(
+            XMLBuilder.add_element(
                 invoice_line,
                 "cbc:LineExtensionAmount",
                 str(item.net_total if not einvoice.storno_id else -item.net_total),
@@ -156,7 +177,8 @@ class XMLBuilder:
     def add_party(invoice, party_tag, entity):
         """
         Add the party to the invoice
-        :param invoice: Invoice Element
+        :param invoice: Invoice Element:w
+
         :param party_tag: Party tag
         :param entity: EinvoiceSeller object
         """
