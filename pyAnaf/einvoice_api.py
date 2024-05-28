@@ -1,5 +1,6 @@
 import json
 import os
+import xml.etree.ElementTree as ET
 from configparser import ConfigParser
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -11,6 +12,15 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 config = ConfigParser()
 config.read(f"{dir_path}/einvoice_api.ini")
+
+
+def parse_element(element):
+    parsed_data = {}
+
+    for key, value in element.attrib.items():
+        parsed_data[key] = value
+
+    return parsed_data
 
 
 class AnafAuth:
@@ -92,6 +102,9 @@ class EinvoiceApi:
         self.url = config["DEFAULT"].get("anaf_api_url")
         self.access_token = access_token
 
+    def set_url(self, url):
+        self.url = url
+
     def list_messages(self, cif, days=30, filter=None):
         """
         List messages for a CIF
@@ -102,7 +115,7 @@ class EinvoiceApi:
         if self.access_token is None:
             raise AnafResponseError("No refresh token provided")
 
-        url = f"{self.url}/listaMesajeFactura?cif={cif}&days={days}"
+        url = f"{self.url}/listaMesajeFactura?cif={cif}&zile={days}"
 
         if filter:
             url += f"&filtru={filter}"
@@ -125,7 +138,7 @@ class EinvoiceApi:
 
             raise AnafResponseError(f"Error listing messages: {response.status}")
 
-        res_obj = json.loads(response)
+        res_obj = json.dumps(response.read().decode())
 
         return res_obj
 
@@ -141,7 +154,9 @@ class EinvoiceApi:
         if self.access_token is None:
             raise AnafResponseError("No refresh token provided")
 
-        url = f"{self.url}/listaMesajePaginatieFactura?cif={cif}&startTime={start_time}&endTime={end_time}&page={page}"
+        url = (
+            f"{self.url}/listaMesajePaginatieFactura?cif={cif}&startTime={start_time}&endTime={end_time}&pagina={page}"
+        )
 
         if filter:
             url += f"&filtru={filter}"
@@ -164,7 +179,7 @@ class EinvoiceApi:
 
             raise AnafResponseError(f"Error listing messages: {response.status}")
 
-        res_obj = json.loads(response)
+        res_obj = json.dumps(response.read().decode())
 
         return res_obj
 
@@ -189,9 +204,13 @@ class EinvoiceApi:
         params = {
             "standard": standard,
             "cif": cif,
-            "extern": external,
-            "autofactura": self_invoice,
         }
+
+        if external:
+            params["external"] = "DA"
+
+        if self_invoice:
+            params["selfInvoice"] = "DA"
 
         url += f"?{urlencode(params)}"
 
@@ -211,6 +230,9 @@ class EinvoiceApi:
 
             raise AnafResponseError(f"Error uploading invoice: {response.status}")
 
-        res_obj = json.loads(response)
+        xml_data = response.read().decode()
+        root = ET.fromstring(xml_data)
 
-        return res_obj
+        xml_dict = parse_element(root)
+
+        return json.dumps(xml_dict)
