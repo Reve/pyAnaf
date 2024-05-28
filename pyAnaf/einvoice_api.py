@@ -196,3 +196,19 @@ class EinvoiceApi:
         # load xml from string
         data = xml_string.encode("utf-8")
         request = Request(url, headers=headers, data=data, params=params)
+
+        try:
+            response = urlopen(request)
+        except Exception as e:
+            raise AnafResponseError(f"Error uploading invoice: {e}")
+
+        if response.status != 200:
+            if response.status == 401 or response.status == 403:
+                # TODO trigger refresh token and retry
+                raise AnafResponseError("Unauthorized")
+
+            raise AnafResponseError(f"Error uploading invoice: {response.status}")
+
+        res_obj = json.loads(response)
+
+        return res_obj
