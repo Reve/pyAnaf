@@ -193,9 +193,11 @@ class EinvoiceApi:
             "autofactura": self_invoice,
         }
 
+        url += f"?{urlencode(params)}"
+
         # load xml from string
         data = xml_string.encode("utf-8")
-        request = Request(url, headers=headers, data=data, params=params)
+        request = Request(url, headers=headers, data=data)
 
         try:
             response = urlopen(request)
