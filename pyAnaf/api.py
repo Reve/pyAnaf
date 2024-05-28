@@ -3,7 +3,7 @@ import json
 import urllib.error as urllib_error
 import urllib.request as urllib_request
 
-from models import AnafResultEntry
+from pyAnaf.models import AnafResultEntry
 
 
 class AnafError(Exception):

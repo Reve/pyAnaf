@@ -4,7 +4,7 @@ from configparser import ConfigParser
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from api import AnafResponseError
+from pyAnaf.api import AnafResponseError
 
 TESTING = os.environ.get("PYANAF_TESTING", False)
 dir_path = os.path.dirname(os.path.realpath(__file__))

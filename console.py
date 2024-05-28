@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from multiprocessing.pool import ThreadPool
 from urllib.parse import parse_qs, urlparse
 
-from einvoice_api import AnafAuth
+from pyAnaf.einvoice_api import AnafAuth
 
 try:
     from pyAnaf.api import Anaf
