@@ -34,13 +34,21 @@ class AnafAuth:
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
+        self.auth_url = config["DEFAULT"].get("anaf_auth_url")
+        self.token_url = config["DEFAULT"].get("anaf_token_url")
+
+    def set_auth_url(self, url):
+        self.auth_url = url
+
+    def set_token_url(self, url):
+        self.token_url = url
 
     def get_auth_url(self):
         """
         Use this URL to get the authorization code
         you need to use a browser in order to input your certificate
         """
-        url = config["DEFAULT"].get("anaf_auth_url")
+        url = self.auth_url
         url += f"?client_id={self.client_id}"
         url += f"&client_secret={self.client_secret}"
         url += "&response_type=code"
@@ -52,7 +60,7 @@ class AnafAuth:
         if code is None:
             return
 
-        url = config["DEFAULT"].get("anaf_token_url")
+        url = self.token_url
         params = {
             "client_id": self.client_id,
             "client_secret": self.client_secret,
@@ -76,7 +84,7 @@ class AnafAuth:
         return res_obj
 
     def refresh_anaf_token(self, refresh_token):
-        url = config["DEFAULT"].get("anaf_token_url")
+        url = self.token_url
         params = {
             "client_id": self.client_id,
             "client_secret": self.client_secret,
