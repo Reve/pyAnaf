@@ -34,13 +34,19 @@ class AnafAuth:
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
-        self.auth_url = config["DEFAULT"].get("anaf_auth_url")
-        self.token_url = config["DEFAULT"].get("anaf_token_url")
+        self.auth_url = "https://logincert.anaf.ro/anaf-oauth2/v1/authorize"
+        self.token_url = "https://logincert.anaf.ro/anaf-oauth2/v1/token"
 
     def set_auth_url(self, url):
+        """
+        This are left here for convenience in case the URLs change and the library is not updated
+        """
         self.auth_url = url
 
     def set_token_url(self, url):
+        """
+        This are left here for convenience in case the URLs change and the library is not updated
+        """
         self.token_url = url
 
     def get_auth_url(self):
