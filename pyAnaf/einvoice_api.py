@@ -1,9 +1,13 @@
 import json
+import logging
 import os
 import xml.etree.ElementTree as ET
 from configparser import ConfigParser
+from datetime import datetime, timezone
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+import jwt
 
 from pyAnaf.api import AnafResponseError
 
@@ -12,6 +16,8 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 config = ConfigParser()
 config.read(f"{dir_path}/einvoice_api.ini")
+
+logger = logging.getLogger(__name__)
 
 
 def parse_element(element):
@@ -95,15 +101,41 @@ class AnafAuth:
 
 
 class EinvoiceApi:
-    def __init__(self, access_token):
+    def __init__(self, access_token, refresh_token, client_id, client_secret, redirect_uri):
         if TESTING:
             self.url = config["testing"].get("anaf_api_url")
 
         self.url = config["DEFAULT"].get("anaf_api_url")
         self.access_token = access_token
+        self.refresh_token = refresh_token
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.redirect_uri = redirect_uri
+        self.auth = AnafAuth(self.client_id, self.client_secret, self.redirect_uri)
 
     def set_url(self, url):
         self.url = url
+
+    def is_token_valid(self):
+        try:
+            decoded_token = jwt.decode(self.access_token, options={"verify_signature": False})
+            exp = datetime.fromtimestamp(decoded_token["exp"], tz=timezone.utc)
+            return datetime.now(timezone.utc) >= exp
+        except jwt.ExpiredSignatureError:
+            logger.error("Token expired")
+            return True
+        except jwt.InvalidTokenError:
+            logger.error("Invalid token")
+            return False
+
+    def refresh_access_token(self):
+        token_data = self.auth.refresh_anaf_token(self.refresh_token)
+        self.access_token = token_data["access_token"]
+        self.refresh_token = token_data["refresh_token"]
+
+    def ensure_token_valid(self):
+        if self.is_token_valid():
+            self.refresh_access_token()
 
     def list_messages(self, cif, days=30, filter=None):
         """
@@ -112,8 +144,7 @@ class EinvoiceApi:
         :param days: number of days to list messages for (optional)
         :param filter: filter messages by type (E,P,T,R) (optional)
         """
-        if self.access_token is None:
-            raise AnafResponseError("No refresh token provided")
+        self.ensure_token_valid()
 
         url = f"{self.url}/listaMesajeFactura?cif={cif}&zile={days}"
 
@@ -151,8 +182,7 @@ class EinvoiceApi:
         :param page: page number
         :param filter: filter messages by type (E,P,T,R) (optional)
         """
-        if self.access_token is None:
-            raise AnafResponseError("No refresh token provided")
+        self.ensure_token_valid()
 
         url = (
             f"{self.url}/listaMesajePaginatieFactura?cif={cif}&startTime={start_time}&endTime={end_time}&pagina={page}"
@@ -192,8 +222,7 @@ class EinvoiceApi:
         :param self_invoice: self invoice (optional)
         """
 
-        if self.access_token is None:
-            raise AnafResponseError("No refresh token provided")
+        self.ensure_token_valid()
 
         url = f"{self.url}/upload"
         headers = {
