@@ -145,6 +145,32 @@ class EinvoiceApi:
         if self.is_token_valid():
             self.refresh_access_token()
 
+    def hello(self):
+        self.ensure_token_valid()
+
+        url = "https://api.anaf.ro/TestOauth/jaxrs/hello?name=valoare/hello"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+        }
+
+        request = Request(url, headers=headers)
+
+        try:
+            response = urlopen(request)
+        except Exception as e:
+            raise AnafResponseError(f"Error saying hello: {e}")
+
+        if response.status != 200:
+            if response.status == 401 or response.status == 403:
+                # TODO trigger refresh token and retry
+                raise AnafResponseError("Unauthorized")
+
+            raise AnafResponseError(f"Error saying hello: {response.status}")
+
+        res_obj = json.dumps(response.read().decode())
+
+        return res_obj
+
     def list_messages(self, cif, days=30, filter=None):
         """
         List messages for a CIF
