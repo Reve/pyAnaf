@@ -163,13 +163,11 @@ class EinvoiceApi:
         if response.status != 200:
             if response.status == 401 or response.status == 403:
                 # TODO trigger refresh token and retry
-                raise AnafResponseError("Unauthorized")
+                return "Unauthorized"
 
-            raise AnafResponseError(f"Error saying hello: {response.status}")
+            return f"Error saying hello: {response.status}"
 
-        res_obj = json.dumps(response.read().decode())
-
-        return res_obj
+        return "OK"
 
     def list_messages(self, cif, days=30, filter=None):
         """
