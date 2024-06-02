@@ -130,8 +130,14 @@ class XMLBuilder:
         )
         XMLBuilder.add_element(tax_subtotal, "cbc:TaxAmount", str(einvoice.vat_total), attrib={"currencyID": "RON"})
         tax_category = XMLBuilder.add_element(tax_subtotal, "cac:TaxCategory")
-        XMLBuilder.add_element(tax_category, "cbc:ID", "S")
-        XMLBuilder.add_element(tax_category, "cbc:Percent", str(einvoice.vat))
+
+        if einvoice.vat > 0:
+            XMLBuilder.add_element(tax_category, "cbc:ID", "S")
+            XMLBuilder.add_element(tax_category, "cbc:Percent", str(einvoice.vat))
+        else:
+            XMLBuilder.add_element(tax_category, "cbc:ID", "O")
+            XMLBuilder.add_element(tax_category, "cbc:TaxExemptionReasonCode", "VATEX-EU-O")
+
         tax_scheme = XMLBuilder.add_element(tax_category, "cac:TaxScheme")
         XMLBuilder.add_element(tax_scheme, "cbc:ID", "VAT")
 
@@ -164,10 +170,17 @@ class XMLBuilder:
             _item = XMLBuilder.add_element(invoice_line, "cac:Item")
             XMLBuilder.add_element(_item, "cbc:Name", item.name)
             classified_tax_category = XMLBuilder.add_element(_item, "cac:ClassifiedTaxCategory")
-            XMLBuilder.add_element(classified_tax_category, "cbc:ID", "S")
-            XMLBuilder.add_element(classified_tax_category, "cbc:Percent", str(item.vat))
+
+            if item.vat > 0:
+                XMLBuilder.add_element(classified_tax_category, "cbc:ID", "S")
+                XMLBuilder.add_element(classified_tax_category, "cbc:Percent", str(item.vat))
+            else:
+                XMLBuilder.add_element(classified_tax_category, "cbc:ID", "O")
+                XMLBuilder.add_element(classified_tax_category, "cbc:TaxExemptionReasonCode", "VATEX-EU-O")
+
             tax_scheme = XMLBuilder.add_element(classified_tax_category, "cac:TaxScheme")
             XMLBuilder.add_element(tax_scheme, "cbc:ID", "VAT")
+
             price = XMLBuilder.add_element(invoice_line, "cac:Price")
             XMLBuilder.add_element(price, "cbc:PriceAmount", str(item.price), attrib={"currencyID": "RON"})
 
