@@ -121,7 +121,6 @@ class EinvoiceApi:
         if TESTING or testing:
             self.url = "https://api.anaf.ro/test/FCTEL/rest"
 
-        self.url = config["DEFAULT"].get("anaf_api_url")
         self.access_token = access_token
         self.refresh_token = refresh_token
         self.client_id = client_id
