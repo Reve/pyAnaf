@@ -245,6 +245,58 @@ class EinvoiceApi:
 
         return res_obj
 
+    def check_upload(self, upload_id):
+        self.ensure_token_valid()
+
+        url = f"{self.url}/stareMesaj?id={upload_id}"
+
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+        }
+        request = Request(url, headers=headers)
+
+        try:
+            response = urlopen(request)
+        except Exception as e:
+            raise AnafResponseError(f"Error checking upload status: {e}")
+
+        if response.status != 200:
+            if response.status == 401 or response.status == 403:
+                # TODO trigger refresh token and retry
+                raise AnafResponseError("Unauthorized")
+
+            raise AnafResponseError(f"Error checking upload status: {response.status}")
+
+        res_obj = json.dumps(response.read().decode())
+
+        return res_obj
+
+    def download_invoice(self, upload_id):
+        self.ensure_token_valid()
+
+        url = f"{self.url}/eFacturaDownload?id={upload_id}"
+
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+        }
+        request = Request(url, headers=headers)
+
+        try:
+            response = urlopen(request)
+        except Exception as e:
+            raise AnafResponseError(f"Error downloading eInvoice: {e}")
+
+        if response.status != 200:
+            if response.status == 401 or response.status == 403:
+                # TODO trigger refresh token and retry
+                raise AnafResponseError("Unauthorized")
+
+            raise AnafResponseError(f"Error downloading eInvoice: {response.status}")
+
+        res_obj = json.dumps(response.read().decode())
+
+        return res_obj
+
     def upload_invoice(self, xml_string, standard, cif, external=False, self_invoice=False):
         """
         Upload invoice to ANAF
