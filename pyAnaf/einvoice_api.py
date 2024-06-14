@@ -34,13 +34,19 @@ class AnafAuth:
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
-        self.auth_url = config["DEFAULT"].get("anaf_auth_url")
-        self.token_url = config["DEFAULT"].get("anaf_token_url")
+        self.auth_url = "https://logincert.anaf.ro/anaf-oauth2/v1/authorize"
+        self.token_url = "https://logincert.anaf.ro/anaf-oauth2/v1/token"
 
     def set_auth_url(self, url):
+        """
+        This are left here for convenience in case the URLs change and the library is not updated
+        """
         self.auth_url = url
 
     def set_token_url(self, url):
+        """
+        This are left here for convenience in case the URLs change and the library is not updated
+        """
         self.token_url = url
 
     def get_auth_url(self):
@@ -109,11 +115,12 @@ class AnafAuth:
 
 
 class EinvoiceApi:
-    def __init__(self, access_token, refresh_token, client_id, client_secret, redirect_uri):
-        if TESTING:
-            self.url = config["testing"].get("anaf_api_url")
+    def __init__(self, access_token, refresh_token, client_id, client_secret, redirect_uri, testing=False):
+        self.url = "https://api.anaf.ro/prod/FCTEL/rest"
 
-        self.url = config["DEFAULT"].get("anaf_api_url")
+        if TESTING or testing:
+            self.url = "https://api.anaf.ro/test/FCTEL/rest"
+
         self.access_token = access_token
         self.refresh_token = refresh_token
         self.client_id = client_id
@@ -122,6 +129,9 @@ class EinvoiceApi:
         self.auth = AnafAuth(self.client_id, self.client_secret, self.redirect_uri)
 
     def set_url(self, url):
+        """
+        This are left here for convenience in case the URLs change and the library is not updated
+        """
         self.url = url
 
     def is_token_valid(self):

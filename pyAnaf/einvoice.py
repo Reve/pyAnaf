@@ -83,6 +83,8 @@ class XMLBuilder:
         :param einvoice: Einvoice object
         :return: XML Element
         """
+        einvoice_has_vat = any(float(item.vat) > 0 for item in einvoice.items)
+
         invoice = ET.Element(
             "Invoice",
             attrib={
@@ -114,8 +116,8 @@ class XMLBuilder:
             XMLBuilder.add_element(invoice_document_reference, "cbc:ID", einvoice.storno_id)
             XMLBuilder.add_element(invoice_document_reference, "cbc:IssueDate", einvoice.storno_date)
 
-        XMLBuilder.add_party(invoice, "cac:AccountingSupplierParty", einvoice.seller)
-        XMLBuilder.add_party(invoice, "cac:AccountingCustomerParty", einvoice.buyer)
+        XMLBuilder.add_party(invoice, "cac:AccountingSupplierParty", einvoice.seller, einvoice_has_vat)
+        XMLBuilder.add_party(invoice, "cac:AccountingCustomerParty", einvoice.buyer, einvoice_has_vat)
 
         payment_means = XMLBuilder.add_element(invoice, "cac:PaymentMeans")
         XMLBuilder.add_element(payment_means, "cbc:PaymentMeansCode", "31")
@@ -130,8 +132,14 @@ class XMLBuilder:
         )
         XMLBuilder.add_element(tax_subtotal, "cbc:TaxAmount", str(einvoice.vat_total), attrib={"currencyID": "RON"})
         tax_category = XMLBuilder.add_element(tax_subtotal, "cac:TaxCategory")
-        XMLBuilder.add_element(tax_category, "cbc:ID", "S")
-        XMLBuilder.add_element(tax_category, "cbc:Percent", str(einvoice.vat))
+
+        if einvoice_has_vat:
+            XMLBuilder.add_element(tax_category, "cbc:ID", "S")
+            XMLBuilder.add_element(tax_category, "cbc:Percent", str(einvoice.vat))
+        else:
+            XMLBuilder.add_element(tax_category, "cbc:ID", "O")
+            XMLBuilder.add_element(tax_category, "cbc:TaxExemptionReasonCode", "VATEX-EU-O")
+
         tax_scheme = XMLBuilder.add_element(tax_category, "cac:TaxScheme")
         XMLBuilder.add_element(tax_scheme, "cbc:ID", "VAT")
 
@@ -164,17 +172,23 @@ class XMLBuilder:
             _item = XMLBuilder.add_element(invoice_line, "cac:Item")
             XMLBuilder.add_element(_item, "cbc:Name", item.name)
             classified_tax_category = XMLBuilder.add_element(_item, "cac:ClassifiedTaxCategory")
-            XMLBuilder.add_element(classified_tax_category, "cbc:ID", "S")
-            XMLBuilder.add_element(classified_tax_category, "cbc:Percent", str(item.vat))
+
+            if einvoice_has_vat:
+                XMLBuilder.add_element(classified_tax_category, "cbc:ID", "S")
+                XMLBuilder.add_element(classified_tax_category, "cbc:Percent", str(item.vat))
+            else:
+                XMLBuilder.add_element(classified_tax_category, "cbc:ID", "O")
+
             tax_scheme = XMLBuilder.add_element(classified_tax_category, "cac:TaxScheme")
             XMLBuilder.add_element(tax_scheme, "cbc:ID", "VAT")
+
             price = XMLBuilder.add_element(invoice_line, "cac:Price")
             XMLBuilder.add_element(price, "cbc:PriceAmount", str(item.price), attrib={"currencyID": "RON"})
 
         return invoice
 
     @staticmethod
-    def add_party(invoice, party_tag, entity):
+    def add_party(invoice_elem, party_tag, entity, with_vat):
         """
         Add the party to the invoice
         :param invoice: Invoice Element:w
@@ -182,9 +196,18 @@ class XMLBuilder:
         :param party_tag: Party tag
         :param entity: EinvoiceSeller object
         """
+        cui = entity.cui
 
-        party = XMLBuilder.add_element(invoice, party_tag)
+        if not with_vat and "RO" in entity.cui.upper():
+            cui = entity.cui[2:]
+
+        party = XMLBuilder.add_element(invoice_elem, party_tag)
         party_entity = XMLBuilder.add_element(party, "cac:Party")
+
+        if not with_vat:
+            party_identification = XMLBuilder.add_element(party_entity, "cac:PartyIdentification")
+            XMLBuilder.add_element(party_identification, "cbc:ID", cui)
+
         party_name = XMLBuilder.add_element(party_entity, "cac:PartyName")
         XMLBuilder.add_element(party_name, "cbc:Name", entity.name)
 
@@ -196,10 +219,11 @@ class XMLBuilder:
         country = XMLBuilder.add_element(postal_address, "cac:Country")
         XMLBuilder.add_element(country, "cbc:IdentificationCode", entity.country)
 
-        party_tax_scheme = XMLBuilder.add_element(party_entity, "cac:PartyTaxScheme")
-        XMLBuilder.add_element(party_tax_scheme, "cbc:CompanyID", entity.cui)
-        tax_scheme = XMLBuilder.add_element(party_tax_scheme, "cac:TaxScheme")
-        XMLBuilder.add_element(tax_scheme, "cbc:ID", "VAT")
+        if with_vat:
+            party_tax_scheme = XMLBuilder.add_element(party_entity, "cac:PartyTaxScheme")
+            XMLBuilder.add_element(party_tax_scheme, "cbc:CompanyID", cui)
+            tax_scheme = XMLBuilder.add_element(party_tax_scheme, "cac:TaxScheme")
+            XMLBuilder.add_element(tax_scheme, "cbc:ID", "VAT")
 
         party_legal_entity = XMLBuilder.add_element(party_entity, "cac:PartyLegalEntity")
         XMLBuilder.add_element(party_legal_entity, "cbc:RegistrationName", entity.name)
