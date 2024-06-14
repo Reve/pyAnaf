@@ -258,7 +258,7 @@ class EinvoiceApi:
     def check_upload(self, upload_id):
         self.ensure_token_valid()
 
-        url = f"{self.url}/stareMesaj?id={upload_id}"
+        url = f"{self.url}/stareMesaj?id_incarcare={upload_id}"
 
         headers = {
             "Authorization": f"Bearer {self.access_token}",
@@ -284,7 +284,7 @@ class EinvoiceApi:
     def download_invoice(self, upload_id):
         self.ensure_token_valid()
 
-        url = f"{self.url}/eFacturaDownload?id={upload_id}"
+        url = f"{self.url}/descarcare?id={upload_id}"
 
         headers = {
             "Authorization": f"Bearer {self.access_token}",
