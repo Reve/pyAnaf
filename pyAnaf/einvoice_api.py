@@ -58,6 +58,7 @@ class AnafAuth:
         url += f"?client_id={self.client_id}"
         url += f"&client_secret={self.client_secret}"
         url += "&response_type=code"
+        url += "&token_content_type=jwt"
         url += f"&redirect_uri={self.redirect_uri}"
 
         return url
@@ -71,6 +72,7 @@ class AnafAuth:
             "client_id": self.client_id,
             "client_secret": self.client_secret,
             "grant_type": "authorization_code",
+            "token_content_type": "jwt",
             "code": code,
             "redirect_uri": self.redirect_uri,
         }
@@ -95,6 +97,7 @@ class AnafAuth:
             "client_id": self.client_id,
             "client_secret": self.client_secret,
             "grant_type": "refresh_token",
+            "token_content_type": "jwt",
             "refresh_token": refresh_token,
             "redirect_uri": self.redirect_uri,
         }
