@@ -280,9 +280,10 @@ class EinvoiceApi:
 
             raise AnafResponseError(f"Error checking upload status: {response.status}")
 
-        res_obj = json.dumps(response.read().decode())
+        res_obj = response.read().decode()
+        xml_data = ET.fromstring(res_obj)
 
-        return res_obj
+        return xml_data
 
     def download_invoice(self, upload_id):
         self.ensure_token_valid()
