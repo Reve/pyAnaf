@@ -307,7 +307,7 @@ class EinvoiceApi:
 
             raise AnafResponseError(f"Error downloading eInvoice: {response.status}")
 
-        res_obj = json.dumps(response.read().decode())
+        res_obj = response.read()
 
         return res_obj
 
