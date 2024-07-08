@@ -309,7 +309,10 @@ class EinvoiceApi:
 
         res_obj = response.read()
 
-        return res_obj
+        return {
+            "filename": response.headers["Content-Disposition"].split("filename=")[-1].strip('"'),
+            "content": res_obj,
+        }
 
     def upload_invoice(self, xml_string, standard, cif, external=False, self_invoice=False):
         """
