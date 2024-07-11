@@ -314,6 +314,34 @@ class EinvoiceApi:
             "content": res_obj,
         }
 
+    def download_invoice_pdf(self, xml_string):
+        self.ensure_token_valid()
+
+        url = f"{self.url}/transformare/FACT1"
+
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+        }
+
+        data = xml_string.encode("utf-8")
+        request = Request(url, headers=headers, data=data)
+
+        try:
+            response = urlopen(request)
+        except Exception as e:
+            raise AnafResponseError(f"Error downloading eInvoice PDF: {e}")
+
+        if response.status != 200:
+            if response.status == 401 or response.status == 403:
+                # TODO trigger refresh token and retry
+                raise AnafResponseError("Unauthorized")
+
+            return json.loads(response.read().decode())
+
+        pdf = response.read()
+
+        return pdf
+
     def upload_invoice(self, xml_string, standard, cif, external=False, self_invoice=False):
         """
         Upload invoice to ANAF
