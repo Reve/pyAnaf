@@ -321,9 +321,10 @@ class EinvoiceApi:
 
         headers = {
             "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "text/plain",
         }
 
-        data = xml_string.encode("utf-8")
+        data = xml_string
         request = Request(url, headers=headers, data=data)
 
         try:
