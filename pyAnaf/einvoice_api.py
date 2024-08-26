@@ -309,6 +309,9 @@ class EinvoiceApi:
 
         res_obj = response.read()
 
+        if "Content-Disposition" not in response.headers:
+            return res_obj
+
         return {
             "filename": response.headers["Content-Disposition"].split("filename=")[-1].strip('"'),
             "content": res_obj,
