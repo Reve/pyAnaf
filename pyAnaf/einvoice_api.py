@@ -398,3 +398,57 @@ class EinvoiceApi:
         xml_dict = parse_element(root)
 
         return json.dumps(xml_dict)
+
+
+    def upload_invoice_natural_person(self, xml_string, standard, cif, external=False, self_invoice=False):
+        """
+        Upload invoice to ANAF
+        :param standard: standard to use (UBL, CN, CII, RASP)
+        :param cif: CIF to upload invoice for
+        :param external: external invoice (optional)
+        :param self_invoice: self invoice (optional)
+        """
+
+        self.ensure_token_valid()
+
+        url = f"{self.url}/uploadb2c"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "text/plain",
+        }
+
+        params = {
+            "standard": standard,
+            "cif": cif,
+        }
+
+        if external:
+            params["external"] = "DA"
+
+        if self_invoice:
+            params["selfInvoice"] = "DA"
+
+        url += f"?{urlencode(params)}"
+
+        # load xml from string
+        data = xml_string.encode("utf-8")
+        request = Request(url, headers=headers, data=data)
+
+        try:
+            response = urlopen(request)
+        except Exception as e:
+            raise AnafResponseError(f"Error uploading invoice: {e}")
+
+        if response.status != 200:
+            if response.status == 401 or response.status == 403:
+                # TODO trigger refresh token and retry
+                raise AnafResponseError("Unauthorized")
+
+            raise AnafResponseError(f"Error uploading invoice: {response.status}")
+
+        xml_data = response.read().decode()
+        root = ET.fromstring(xml_data)
+
+        xml_dict = parse_element(root)
+
+        return json.dumps(xml_dict)
