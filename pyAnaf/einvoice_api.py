@@ -112,7 +112,7 @@ class AnafAuth:
         if response.status != 200:
             raise AnafResponseError(f"Error refreshing token: {response.status}")
 
-        res_obj = json.loads(response)
+        res_obj = json.loads(response.read().decode().lstrip("\ufeff"))
 
         return res_obj
 
@@ -175,7 +175,6 @@ class EinvoiceApi:
 
         if response.status != 200:
             if response.status == 401 or response.status == 403:
-                # TODO trigger refresh token and retry
                 return "Unauthorized"
 
             return f"Error saying hello: {response.status}"
@@ -209,7 +208,6 @@ class EinvoiceApi:
 
         if response.status != 200:
             if response.status == 401 or response.status == 403:
-                # TODO trigger refresh token and retry
                 raise AnafResponseError("Unauthorized")
 
             raise AnafResponseError(f"Error listing messages: {response.status}")
@@ -249,7 +247,6 @@ class EinvoiceApi:
 
         if response.status != 200:
             if response.status == 401 or response.status == 403:
-                # TODO trigger refresh token and retry
                 raise AnafResponseError("Unauthorized")
 
             raise AnafResponseError(f"Error listing messages: {response.status}")
@@ -275,7 +272,6 @@ class EinvoiceApi:
 
         if response.status != 200:
             if response.status == 401 or response.status == 403:
-                # TODO trigger refresh token and retry
                 raise AnafResponseError("Unauthorized")
 
             raise AnafResponseError(f"Error checking upload status: {response.status}")
@@ -302,7 +298,6 @@ class EinvoiceApi:
 
         if response.status != 200:
             if response.status == 401 or response.status == 403:
-                # TODO trigger refresh token and retry
                 raise AnafResponseError("Unauthorized")
 
             raise AnafResponseError(f"Error downloading eInvoice: {response.status}")
@@ -337,7 +332,6 @@ class EinvoiceApi:
 
         if response.status != 200:
             if response.status == 401 or response.status == 403:
-                # TODO trigger refresh token and retry
                 raise AnafResponseError("Unauthorized")
 
             return json.loads(response.read().decode())
@@ -387,7 +381,6 @@ class EinvoiceApi:
 
         if response.status != 200:
             if response.status == 401 or response.status == 403:
-                # TODO trigger refresh token and retry
                 raise AnafResponseError("Unauthorized")
 
             raise AnafResponseError(f"Error uploading invoice: {response.status}")
@@ -441,7 +434,6 @@ class EinvoiceApi:
 
         if response.status != 200:
             if response.status == 401 or response.status == 403:
-                # TODO trigger refresh token and retry
                 raise AnafResponseError("Unauthorized")
 
             raise AnafResponseError(f"Error uploading invoice: {response.status}")
