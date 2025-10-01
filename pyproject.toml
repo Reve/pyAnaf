@@ -1,4 +1,14 @@
-# Exclude a variety of commonly ignored directories.
+[project]
+name = "pyAnaf"
+version = "0.0.4"
+description = "A Python library for accessing the Romanian ANAF API."
+authors = [
+    { name = "Radu Boncea" },
+    { name = "Alexandru Gheorghita" }
+]
+requires-python = ">=3.9"
+
+# Ruff configuration
 exclude = [
     ".bzr",
     ".direnv",
